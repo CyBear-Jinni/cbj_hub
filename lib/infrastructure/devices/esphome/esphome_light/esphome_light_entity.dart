@@ -9,8 +9,8 @@ import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub
 import 'package:cbj_hub/utils.dart';
 import 'package:dartz/dartz.dart';
 
-class ESPHomeLightEntity extends GenericLightDE {
-  ESPHomeLightEntity({
+class EspHomeLightEntity extends GenericLightDE {
+  EspHomeLightEntity({
     required CoreUniqueId uniqueId,
     required VendorUniqueId vendorUniqueId,
     required DeviceDefaultName defaultName,

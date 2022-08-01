@@ -8,6 +8,7 @@ import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/proto_gen_date.dart';
 import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub_server.pbgrpc.dart';
 import 'package:cbj_hub/infrastructure/generic_devices/abstract_device/device_entity_dto_abstract.dart';
 import 'package:cbj_hub/infrastructure/room/room_entity_dtos.dart';
+import 'package:cbj_hub/infrastructure/routines/routine_cbj_dtos.dart';
 import 'package:cbj_hub/infrastructure/scenes/scene_cbj_dtos.dart';
 import 'package:cbj_hub/injection.dart';
 import 'package:cbj_hub/utils.dart';
@@ -47,6 +48,11 @@ class HubAppServer extends CbjHubServiceBase {
         } else if (entityDto is SceneCbjDtos) {
           return RequestsAndStatusFromHub(
             sendingType: SendingType.sceneType,
+            allRemoteCommands: jsonEncode(entityDto.toJson()),
+          );
+        } else if (entityDto is RoutineCbjDtos) {
+          return RequestsAndStatusFromHub(
+            sendingType: SendingType.routineType,
             allRemoteCommands: jsonEncode(entityDto.toJson()),
           );
         } else {

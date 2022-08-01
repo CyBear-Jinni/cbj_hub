@@ -1,18 +1,19 @@
+import 'dart:async';
+
 import 'package:cbj_hub/domain/generic_devices/abstract_device/core_failures.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/device_entity_abstract.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/value_objects_core.dart';
 import 'package:cbj_hub/domain/generic_devices/device_type_enums.dart';
-import 'package:cbj_hub/domain/generic_devices/generic_light_device/generic_light_entity.dart';
-import 'package:cbj_hub/domain/generic_devices/generic_light_device/generic_light_value_objects.dart';
-import 'package:cbj_hub/domain/mqtt_server/i_mqtt_server_repository.dart';
-import 'package:cbj_hub/infrastructure/devices/tasmota/tasmota_device_value_objects.dart';
+import 'package:cbj_hub/domain/generic_devices/generic_rgbw_light_device/generic_rgbw_light_entity.dart';
+import 'package:cbj_hub/domain/generic_devices/generic_smart_tv/generic_smart_tv_entity.dart';
+import 'package:cbj_hub/domain/generic_devices/generic_smart_tv/generic_smart_tv_value_objects.dart';
+import 'package:cbj_hub/infrastructure/devices/lg/lg_device_value_objects.dart';
 import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub_server.pbgrpc.dart';
-import 'package:cbj_hub/injection.dart';
 import 'package:cbj_hub/utils.dart';
 import 'package:dartz/dartz.dart';
 
-class TasmotaLedEntity extends GenericLightDE {
-  TasmotaLedEntity({
+class LgWebosTvEntity extends GenericSmartTvDE {
+  LgWebosTvEntity({
     required CoreUniqueId uniqueId,
     required VendorUniqueId vendorUniqueId,
     required DeviceDefaultName defaultName,
@@ -23,31 +24,39 @@ class TasmotaLedEntity extends GenericLightDE {
     required DeviceSenderId senderId,
     required DeviceCompUuid compUuid,
     required DevicePowerConsumption powerConsumption,
-    required GenericLightSwitchState lightSwitchState,
-    required this.tasmotaDeviceTopicName,
+    required GenericSmartTvSwitchState smartTvSwitchState,
+    required this.lgPort,
+    this.deviceMdnsName,
+    this.lastKnownIp,
   }) : super(
           uniqueId: uniqueId,
           vendorUniqueId: vendorUniqueId,
           defaultName: defaultName,
-          lightSwitchState: lightSwitchState,
+          smartTvSwitchState: smartTvSwitchState,
           deviceStateGRPC: deviceStateGRPC,
           stateMassage: stateMassage,
           senderDeviceOs: senderDeviceOs,
           senderDeviceModel: senderDeviceModel,
           senderId: senderId,
-          deviceVendor: DeviceVendor(VendorsAndServices.tasmota.toString()),
+          deviceVendor: DeviceVendor(
+              VendorsAndServices.vendorsAndServicesNotSupported.toString()),
           compUuid: compUuid,
           powerConsumption: powerConsumption,
         );
 
-  TasmotaDeviceTopicName tasmotaDeviceTopicName;
+  /// Lg communication port
+  LgPort? lgPort;
+
+  DeviceLastKnownIp? lastKnownIp;
+
+  DeviceMdnsName? deviceMdnsName;
 
   /// Please override the following methods
   @override
   Future<Either<CoreFailure, Unit>> executeDeviceAction({
     required DeviceEntityAbstract newEntity,
   }) async {
-    if (newEntity is! GenericLightDE) {
+    if (newEntity is! GenericRgbwLightDE) {
       return left(
         const CoreFailure.actionExcecuter(
           failedValue: 'Not the correct type',
@@ -57,7 +66,7 @@ class TasmotaLedEntity extends GenericLightDE {
 
     try {
       if (newEntity.lightSwitchState!.getOrCrash() !=
-              lightSwitchState!.getOrCrash() ||
+              smartTvSwitchState!.getOrCrash() ||
           deviceStateGRPC.getOrCrash() != DeviceStateGRPC.ack.toString()) {
         final DeviceActions? actionToPreform =
             EnumHelperCbj.stringToDeviceAction(
@@ -65,27 +74,21 @@ class TasmotaLedEntity extends GenericLightDE {
         );
 
         if (actionToPreform == DeviceActions.on) {
-          (await turnOnLight()).fold(
-            (l) {
-              logger.e('Error turning Tasmota light on');
-              throw l;
-            },
-            (r) {
-              logger.i('Tasmota light turn on success');
-            },
-          );
+          (await turnOnSmartTv()).fold((l) {
+            logger.e('Error turning WebOs on');
+            throw l;
+          }, (r) {
+            logger.i('WebOs turn on success');
+          });
         } else if (actionToPreform == DeviceActions.off) {
-          (await turnOffLight()).fold(
-            (l) {
-              logger.e('Error turning Tasmota light off');
-              throw l;
-            },
-            (r) {
-              logger.i('Tasmota light turn off success');
-            },
-          );
+          (await turnOffSmartTv()).fold((l) {
+            logger.e('Error turning WebOs off');
+            throw l;
+          }, (r) {
+            logger.i('WebOs turn off success');
+          });
         } else {
-          logger.e('actionToPreform is not set correctly on Tasmota Led');
+          logger.e('actionToPreform is not set correctly on WebOs');
         }
       }
       deviceStateGRPC = DeviceState(DeviceStateGRPC.ack.toString());
@@ -97,32 +100,18 @@ class TasmotaLedEntity extends GenericLightDE {
   }
 
   @override
-  Future<Either<CoreFailure, Unit>> turnOnLight() async {
-    lightSwitchState = GenericLightSwitchState(DeviceActions.on.toString());
-
-    try {
-      getIt<IMqttServerRepository>().publishMessage(
-        'cmnd/${tasmotaDeviceTopicName.getOrCrash()}/Power',
-        'ON',
-      );
-      return right(unit);
-    } catch (e) {
+  Future<Either<CoreFailure, Unit>> turnOnSmartTv() async {
+    try {} catch (e) {
       return left(const CoreFailure.unexpected());
     }
+    return left(const CoreFailure.unexpected());
   }
 
   @override
-  Future<Either<CoreFailure, Unit>> turnOffLight() async {
-    lightSwitchState = GenericLightSwitchState(DeviceActions.off.toString());
-
-    try {
-      getIt<IMqttServerRepository>().publishMessage(
-        'cmnd/${tasmotaDeviceTopicName.getOrCrash()}/Power',
-        'OFF',
-      );
-      return right(unit);
-    } catch (e) {
+  Future<Either<CoreFailure, Unit>> turnOffSmartTv() async {
+    try {} catch (e) {
       return left(const CoreFailure.unexpected());
     }
+    return left(const CoreFailure.unexpected());
   }
 }

@@ -1,11 +1,13 @@
 import 'dart:collection';
 
+import 'package:cbj_hub/domain/binding/binding_cbj_entity.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/device_entity_abstract.dart';
 import 'package:cbj_hub/domain/local_db/i_local_db_repository.dart';
 import 'package:cbj_hub/domain/local_db/local_db_failures.dart';
 import 'package:cbj_hub/domain/room/room_entity.dart';
 import 'package:cbj_hub/domain/room/value_objects_room.dart';
 import 'package:cbj_hub/domain/rooms/i_saved_rooms_repo.dart';
+import 'package:cbj_hub/domain/routine/routine_cbj_entity.dart';
 import 'package:cbj_hub/domain/saved_devices/i_saved_devices_repo.dart';
 import 'package:cbj_hub/domain/scene/scene_cbj_entity.dart';
 import 'package:cbj_hub/injection.dart';
@@ -62,12 +64,79 @@ class SavedRoomsRepo extends ISavedRoomsRepo {
     return null;
   }
 
+  RoomEntity? getRoomRoutineExistIn(RoutineCbjEntity routineCbj) {
+    final String uniqueId = routineCbj.uniqueId.getOrCrash();
+    for (final RoomEntity roomEntity in _allRooms.values) {
+      if (roomEntity.roomRoutinesId.getOrCrash().contains(uniqueId)) {
+        return roomEntity;
+      }
+    }
+    return null;
+  }
+
+  RoomEntity? getRoomBindingExistIn(BindingCbjEntity bindingCbj) {
+    final String uniqueId = bindingCbj.uniqueId.getOrCrash();
+    for (final RoomEntity roomEntity in _allRooms.values) {
+      if (roomEntity.roomBindingsId.getOrCrash().contains(uniqueId)) {
+        return roomEntity;
+      }
+    }
+    return null;
+  }
+
   @override
   RoomEntity addOrUpdateRoom(RoomEntity roomEntity) {
+    RoomEntity newRoomEntity = roomEntity;
+
+    final RoomEntity? roomFromAllRoomsList = _allRooms[roomEntity.uniqueId.getOrCrash()];
+    /// TODO: Check if this should only happen in discover room
+    if(roomFromAllRoomsList != null){
+      /// For devices in the room
+      final List<String> allDevicesInNewRoom = roomEntity.roomDevicesId.getOrCrash();
+      final List<String> allDevicesInExistingRoom = roomFromAllRoomsList.roomDevicesId.getOrCrash();
+
+
+      final HashSet<String> tempAddDevicesList = HashSet<String>();
+      tempAddDevicesList.addAll(allDevicesInNewRoom);
+      tempAddDevicesList.addAll(allDevicesInExistingRoom);
+      newRoomEntity = newRoomEntity.copyWith(roomDevicesId: RoomDevicesId(List.from(tempAddDevicesList)));
+
+      /// For scenes in the room
+      final List<String> allScenesInNewRoom = roomEntity.roomScenesId.getOrCrash();
+      final List<String> allScenesInExistingRoom = roomFromAllRoomsList.roomDevicesId.getOrCrash();
+
+
+      final HashSet<String> tempAddScenesList = HashSet<String>();
+      tempAddScenesList.addAll(allScenesInNewRoom);
+      tempAddScenesList.addAll(allScenesInExistingRoom);
+      newRoomEntity = newRoomEntity.copyWith(roomScenesId: RoomScenesId(List.from(tempAddScenesList)));
+
+      /// For Routines in the room
+      final List<String> allRoutinesInNewRoom = roomEntity.roomRoutinesId.getOrCrash();
+      final List<String> allRoutinesInExistingRoom = roomFromAllRoomsList.roomRoutinesId.getOrCrash();
+
+
+      final HashSet<String> tempAddRoutinesList = HashSet<String>();
+      tempAddRoutinesList.addAll(allRoutinesInNewRoom);
+      tempAddRoutinesList.addAll(allRoutinesInExistingRoom);
+      newRoomEntity = newRoomEntity.copyWith(roomRoutinesId: RoomRoutinesId(List.from(tempAddRoutinesList)));
+
+      /// For Bindings in the room
+      final List<String> allBindingsInNewRoom = roomEntity.roomBindingsId.getOrCrash();
+      final List<String> allBindingsInExistingRoom = roomFromAllRoomsList.roomBindingsId.getOrCrash();
+
+
+      final HashSet<String> tempAddBindingsList = HashSet<String>();
+      tempAddBindingsList.addAll(allBindingsInNewRoom);
+      tempAddBindingsList.addAll(allBindingsInExistingRoom);
+      newRoomEntity = newRoomEntity.copyWith(roomBindingsId: RoomBindingsId(List.from(tempAddBindingsList)));
+
+    }
+
     _allRooms.addEntries([
-      MapEntry<String, RoomEntity>(roomEntity.uniqueId.getOrCrash(), roomEntity)
+      MapEntry<String, RoomEntity>(newRoomEntity.uniqueId.getOrCrash(), newRoomEntity)
     ]);
-    return roomEntity;
+    return newRoomEntity;
   }
 
   @override
@@ -84,6 +153,7 @@ class SavedRoomsRepo extends ISavedRoomsRepo {
     }
     _allRooms[discoveredRoomId]!
         .addDeviceId(deviceEntity.uniqueId.getOrCrash());
+
   }
 
   @override
@@ -103,6 +173,38 @@ class SavedRoomsRepo extends ISavedRoomsRepo {
   }
 
   @override
+  void addRoutineToRoomDiscoveredIfNotExist(RoutineCbjEntity routineCbjEntity) {
+    final RoomEntity? roomEntity = getRoomRoutineExistIn(routineCbjEntity);
+    if (roomEntity != null) {
+      return;
+    }
+    final String discoveredRoomId =
+        RoomUniqueId.discoveredRoomId().getOrCrash();
+
+    if (_allRooms[discoveredRoomId] == null) {
+      _allRooms.addEntries([MapEntry(discoveredRoomId, RoomEntity.empty())]);
+    }
+    _allRooms[discoveredRoomId]!
+        .addRoutineId(routineCbjEntity.uniqueId.getOrCrash());
+  }
+
+  @override
+  void addBindingToRoomDiscoveredIfNotExist(BindingCbjEntity bindingCbjEntity) {
+    final RoomEntity? roomEntity = getRoomBindingExistIn(bindingCbjEntity);
+    if (roomEntity != null) {
+      return;
+    }
+    final String discoveredRoomId =
+        RoomUniqueId.discoveredRoomId().getOrCrash();
+
+    if (_allRooms[discoveredRoomId] == null) {
+      _allRooms.addEntries([MapEntry(discoveredRoomId, RoomEntity.empty())]);
+    }
+    _allRooms[discoveredRoomId]!
+        .addBindingId(bindingCbjEntity.uniqueId.getOrCrash());
+  }
+
+  @override
   Future<Either<LocalDbFailures, Unit>> saveAndActiveRoomToDb({
     required RoomEntity roomEntity,
   }) async {
@@ -113,7 +215,15 @@ class SavedRoomsRepo extends ISavedRoomsRepo {
     if (_allRooms[roomId] == null) {
       _allRooms.addEntries([MapEntry(roomId, roomEntity)]);
     } else {
-      _allRooms[roomId] = roomEntity;
+      final RoomEntity roomEntityCombinedDevices = roomEntity.copyWith(
+        roomDevicesId: RoomDevicesId(
+          combineNoDuplicateListOfString(
+            _allRooms[roomId]!.roomDevicesId.getOrCrash(),
+            roomEntity.roomDevicesId.getOrCrash(),
+          ),
+        ),
+      );
+      _allRooms[roomId] = roomEntityCombinedDevices;
     }
     await getIt<ISavedDevicesRepo>().saveAndActivateSmartDevicesToDb();
     return getIt<ILocalDbRepository>().saveRoomsToDb(
@@ -121,36 +231,43 @@ class SavedRoomsRepo extends ISavedRoomsRepo {
     );
   }
 
-  /// Remove all devices ID in our room from all other rooms to prevent
-  /// duplicate
+  /// Remove all devices in our room from all the rooms to prevent duplicate
   Future<void> removeSameDevicesFromOtherRooms(RoomEntity roomEntity) async {
-    final List<String> devicesIdInTheRoom =
+    final List<String> devicesIdInThePassedRoom =
         List.from(roomEntity.roomDevicesId.getOrCrash());
-    if (devicesIdInTheRoom.isEmpty) {
+    if (devicesIdInThePassedRoom.isEmpty) {
       return;
     }
 
-    for (final RoomEntity roomEntityTemp in _allRooms.values) {
+    for (RoomEntity roomEntityTemp in _allRooms.values) {
       if (roomEntityTemp.roomDevicesId.failureOrUnit != right(unit)) {
         continue;
       }
-      final List<String> roomIdesTempList =
+      final List<String> devicesIdInTheRoom =
           List.from(roomEntityTemp.roomDevicesId.getOrCrash());
 
-      for (final String roomIdTemp in roomIdesTempList) {
-        final int indexOfDeviceId = devicesIdInTheRoom.indexOf(roomIdTemp);
+      for (final String deviceIdInTheRoom in devicesIdInTheRoom) {
+        final int indexOfDeviceId =
+            devicesIdInThePassedRoom.indexOf(deviceIdInTheRoom);
 
         /// If device id exist in other room than delete it from that room
         if (indexOfDeviceId != -1) {
-          roomEntityTemp.deleteIdIfExist(roomIdTemp);
-
-          devicesIdInTheRoom.removeAt(indexOfDeviceId);
-          if (devicesIdInTheRoom.isEmpty) {
-            return;
-          }
-          continue;
+          roomEntityTemp = roomEntityTemp.copyWith(
+            roomDevicesId: roomEntityTemp.deleteIdIfExist(deviceIdInTheRoom),
+          );
+          _allRooms[roomEntityTemp.uniqueId.getOrCrash()] = roomEntityTemp;
         }
       }
     }
+  }
+
+  List<String> combineNoDuplicateListOfString(
+    List<String> devicesId,
+    List<String> newDevicesId,
+  ) {
+    final HashSet<String> hashSetDevicesId = HashSet<String>();
+    hashSetDevicesId.addAll(devicesId);
+    hashSetDevicesId.addAll(newDevicesId);
+    return List.from(hashSetDevicesId);
   }
 }

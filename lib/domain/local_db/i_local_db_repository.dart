@@ -1,6 +1,8 @@
+import 'package:cbj_hub/domain/binding/binding_cbj_entity.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/device_entity_abstract.dart';
 import 'package:cbj_hub/domain/local_db/local_db_failures.dart';
 import 'package:cbj_hub/domain/room/room_entity.dart';
+import 'package:cbj_hub/domain/routine/routine_cbj_entity.dart';
 import 'package:cbj_hub/domain/scene/scene_cbj_entity.dart';
 import 'package:cbj_hub/domain/vendors/login_abstract/login_entity_abstract.dart';
 import 'package:cbj_hub/domain/vendors/tuya_login/generic_tuya_login_entity.dart';
@@ -19,6 +21,12 @@ abstract class ILocalDbRepository {
 
   /// Name of the box that stores all the scenes in form of string json
   String scenesBoxName = 'scenesBox';
+
+  /// Name of the box that stores all the routines in form of string json
+  String routinesBoxName = 'routinesBox';
+
+  /// Name of the box that stores all the bindings in form of string json
+  String bindingsBoxName = 'bindingsBox';
 
   /// Name of the box that stores Tuya login credentials
   String tuyaVendorCredentialsBoxName = 'tuyaVendorCredentialsBoxName';
@@ -45,6 +53,12 @@ abstract class ILocalDbRepository {
 
   /// Get all saved scenes from local db
   Future<Either<LocalDbFailures, List<SceneCbjEntity>>> getScenesFromDb();
+
+  /// Get all saved routines from local db
+  Future<Either<LocalDbFailures, List<RoutineCbjEntity>>> getRoutinesFromDb();
+
+  /// Get all saved bindings from local db
+  Future<Either<LocalDbFailures, List<BindingCbjEntity>>> getBindingsFromDb();
 
   /// Will ger all rooms from db, if didn't find any will return discovered room
   /// without any devices
@@ -73,6 +87,14 @@ abstract class ILocalDbRepository {
 
   Future<Either<LocalDbFailures, Unit>> saveScenes({
     required List<SceneCbjEntity> sceneList,
+  });
+
+  Future<Either<LocalDbFailures, Unit>> saveRoutines({
+    required List<RoutineCbjEntity> routineList,
+  });
+
+  Future<Either<LocalDbFailures, Unit>> saveBindings({
+    required List<BindingCbjEntity> bindingList,
   });
 
   Future<Either<LocalDbFailures, Unit>> saveVendorLoginCredentials({

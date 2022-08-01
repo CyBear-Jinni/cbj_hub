@@ -11,7 +11,6 @@ import 'package:cbj_hub/infrastructure/devices/tuya_smart/tuya_smart_remote_api/
 import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub_server.pbgrpc.dart';
 import 'package:cbj_hub/utils.dart';
 import 'package:dartz/dartz.dart';
-import 'package:yeedart/yeedart.dart';
 
 class TuyaSmartSwitchEntity extends GenericSwitchDE {
   TuyaSmartSwitchEntity({
@@ -42,9 +41,6 @@ class TuyaSmartSwitchEntity extends GenericSwitchDE {
           powerConsumption: powerConsumption,
         );
 
-  /// TuyaSmart package object require to close previews request before new one
-  Device? tuyaSmartPackageObject;
-
   /// Will be the cloud api reference, can be Tuya or Jinvoo Smart or Smart Life
   CloudTuya cloudTuya;
 
@@ -69,7 +65,7 @@ class TuyaSmartSwitchEntity extends GenericSwitchDE {
         );
 
         if (actionToPreform == DeviceActions.on) {
-          (await turnOnLight()).fold(
+          (await turnOnSwitch()).fold(
             (l) {
               logger.e('Error turning Tuya switch on\n$l');
               throw l;
@@ -79,7 +75,7 @@ class TuyaSmartSwitchEntity extends GenericSwitchDE {
             },
           );
         } else if (actionToPreform == DeviceActions.off) {
-          (await turnOffLight()).fold(
+          (await turnOffSwitch()).fold(
             (l) {
               logger.e('Error turning Tuya off\n$l');
               throw l;
@@ -102,7 +98,8 @@ class TuyaSmartSwitchEntity extends GenericSwitchDE {
     }
   }
 
-  Future<Either<CoreFailure, Unit>> turnOnLight() async {
+  @override
+  Future<Either<CoreFailure, Unit>> turnOnSwitch() async {
     switchState = GenericSwitchSwitchState(DeviceActions.on.toString());
     try {
       final String requestResponse = await cloudTuya.turnOn(
@@ -114,7 +111,8 @@ class TuyaSmartSwitchEntity extends GenericSwitchDE {
     }
   }
 
-  Future<Either<CoreFailure, Unit>> turnOffLight() async {
+  @override
+  Future<Either<CoreFailure, Unit>> turnOffSwitch() async {
     switchState = GenericSwitchSwitchState(DeviceActions.off.toString());
 
     try {

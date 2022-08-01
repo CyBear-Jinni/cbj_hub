@@ -11,7 +11,6 @@ import 'package:cbj_hub/infrastructure/devices/tuya_smart/tuya_smart_remote_api/
 import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub_server.pbgrpc.dart';
 import 'package:cbj_hub/utils.dart';
 import 'package:dartz/dartz.dart';
-import 'package:yeedart/yeedart.dart';
 
 class TuyaSmartPlugEntity extends GenericSmartPlugDE {
   TuyaSmartPlugEntity({
@@ -41,9 +40,6 @@ class TuyaSmartPlugEntity extends GenericSmartPlugDE {
           compUuid: compUuid,
           powerConsumption: powerConsumption,
         );
-
-  /// TuyaSmart package object require to close previews request before new one
-  Device? tuyaSmartPackageObject;
 
   /// Will be the cloud api reference, can be Tuya or Jinvoo Smart or Smart Life
   CloudTuya cloudTuya;

@@ -16,7 +16,7 @@ class SceneCbjRepository implements ISceneCbjRepository {
   SceneCbjRepository() {
     setUpAllFromDb();
   }
-  Map<String, SceneCbjEntity> _allScnes = {};
+  final Map<String, SceneCbjEntity> _allScenes = {};
 
   Future<void> setUpAllFromDb() async {
     /// Delay inorder for the Hive boxes to initialize
@@ -37,18 +37,18 @@ class SceneCbjRepository implements ISceneCbjRepository {
 
   @override
   Future<List<SceneCbjEntity>> getAllScenesAsList() async {
-    return _allScnes.values.toList();
+    return _allScenes.values.toList();
   }
 
   @override
   Future<Map<String, SceneCbjEntity>> getAllScenesAsMap() async {
-    return _allScnes;
+    return _allScenes;
   }
 
   @override
   Future<Either<LocalDbFailures, Unit>> saveAndActivateSceneToDb() {
     return getIt<ILocalDbRepository>().saveScenes(
-      sceneList: List<SceneCbjEntity>.from(_allScnes.values),
+      sceneList: List<SceneCbjEntity>.from(_allScenes.values),
     );
   }
 
@@ -58,13 +58,13 @@ class SceneCbjRepository implements ISceneCbjRepository {
   ) async {
     /// Check if scene already exist
     if (findSceneIfAlreadyBeenAdded(sceneCbj) == null) {
-      _allScnes
+      _allScenes
           .addEntries([MapEntry(sceneCbj.uniqueId.getOrCrash(), sceneCbj)]);
 
       final String entityId = sceneCbj.uniqueId.getOrCrash();
 
       /// If it is new scene
-      _allScnes[entityId] = sceneCbj;
+      _allScenes[entityId] = sceneCbj;
 
       await saveAndActivateSceneToDb();
       await getIt<ISavedDevicesRepo>().saveAndActivateSmartDevicesToDb();
@@ -100,6 +100,6 @@ class SceneCbjRepository implements ISceneCbjRepository {
   SceneCbjEntity? findSceneIfAlreadyBeenAdded(
     SceneCbjEntity sceneEntity,
   ) {
-    return _allScnes[sceneEntity.uniqueId.getOrCrash()];
+    return _allScenes[sceneEntity.uniqueId.getOrCrash()];
   }
 }

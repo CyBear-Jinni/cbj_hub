@@ -14,6 +14,10 @@ abstract class IMqttServerRepository {
 
   String getScenesTopicTypeName();
 
+  String getRoutinesTopicTypeName();
+
+  String getBindingsTopicTypeName();
+
   ///Connecting the hub client to broker
   Future<MqttServerClient> connect();
 
@@ -49,4 +53,10 @@ abstract class IMqttServerRepository {
 
   /// Subscribe to changes in given topic
   Future<void> subscribeToTopic(String topic);
+
+  /// Post object to mqtt correctly, right path and right way to post each type
+  Future<void> postToMqtt({
+    required dynamic entityFromTheApp,
+    bool? gotFromApp,
+  });
 }

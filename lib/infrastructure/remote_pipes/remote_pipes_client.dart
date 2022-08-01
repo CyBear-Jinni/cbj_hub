@@ -9,6 +9,7 @@ import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub
 import 'package:cbj_hub/infrastructure/generic_devices/abstract_device/device_entity_dto_abstract.dart';
 import 'package:cbj_hub/infrastructure/generic_devices/generic_ping_device/generic_ping_device_dtos.dart';
 import 'package:cbj_hub/infrastructure/room/room_entity_dtos.dart';
+import 'package:cbj_hub/infrastructure/routines/routine_cbj_dtos.dart';
 import 'package:cbj_hub/infrastructure/scenes/scene_cbj_dtos.dart';
 import 'package:cbj_hub/injection.dart';
 import 'package:cbj_hub/utils.dart';
@@ -54,6 +55,11 @@ class RemotePipesClient {
           } else if (entityDtoToSend is SceneCbjDtos) {
             return RequestsAndStatusFromHub(
               sendingType: SendingType.sceneType,
+              allRemoteCommands: jsonEncode(entityDtoToSend.toJson()),
+            );
+          } else if (entityDtoToSend is RoutineCbjDtos) {
+            return RequestsAndStatusFromHub(
+              sendingType: SendingType.routineType,
               allRemoteCommands: jsonEncode(entityDtoToSend.toJson()),
             );
           } else {

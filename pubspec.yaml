@@ -10,6 +10,8 @@ environment:
 dependencies:
   # Contains utility classes in the style of dart:async to work with asynchronous computations.
   async: ^2.9.0
+  # Package to create, convert, alter, and compare colors in a variety of colorspaces.
+  color: ^3.0.0
   # Collection of cyclic redundancy check (CRC) routines as Dart converters.
   crclib: ^3.0.0
   # Cast videos to your ChromeCast device and control their playback
@@ -43,11 +45,17 @@ dependencies:
   # Small, easy to use and extensible logger which prints beautiful logs.
   logger: ^1.1.0
   # A server and browser based MQTT client for Dart.
-  mqtt_client: ^9.6.9
+  mqtt_client: ^9.7.0
   # Service discovery over multicast DNS (mDNS), Bonjour, and Avahi.
   multicast_dns: ^0.3.2+1
   # Helps you discover open ports, devices on subnet and more.
-  network_tools: ^1.0.8
+  # TODO: change back to version from pub.dev when my pr get merged
+  #  network_tools: ^1.0.8
+  network_tools:
+    git:
+      ref: dev
+      url: https://github.com/guyluz11/network_tools.git
+      path: network_tools
   # Provides runtime support for a Dart implementation of protobufs.
   protobuf: ^2.1.0
   # Extends the capabilities of Dart Streams and StreamControllers.
@@ -69,8 +77,8 @@ dev_dependencies:
   # Injectable is a convenient code generator for get_it.
   injectable_generator: ^1.5.4
   # Collection of lint rules for Dart and Flutter projects
-  lint: ^1.8.2
+  lint: ^1.10.0
   # Library for mocks
-  mockito: ^5.2.0
+  mockito: ^5.3.0
   # A full featured library for writing and running Dart tests across platforms.
   test: ^1.21.4

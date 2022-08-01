@@ -15,12 +15,7 @@ class EspHomeApiClient {
     required String deviceMdnsT,
     this.devicePort = 6053,
     this.devicePass,
-  }) {
-    deviceMdns = deviceMdnsT;
-    if (!deviceMdns.contains('.local')) {
-      deviceMdns += '.local';
-    }
-  }
+  });
 
   Socket? _fSocket;
   String? devicePass;
@@ -43,7 +38,7 @@ class EspHomeApiClient {
     if (_fSocket != null && _fSocket!.isBroadcast) {
       return _fSocket!;
     }
-    addressOfServer ??= await getIpFromMdns(deviceMdns);
+    addressOfServer ??= await getIpFromMdns('$deviceMdns.local');
     // TODO: Test if it is possible to connect to socket using the deviceMdns
     // TODO: instead of the address, suppose to be more consistent.
 
@@ -770,13 +765,9 @@ class EspHomeApiClient {
   /// fName = _connect_resolve_host
   /// Step 1 in connect process: resolve the address.
   static Future<String?> getIpFromMdns(String deviceMdnsName) async {
-    String validDeviceMdnsName = deviceMdnsName;
-    if (!validDeviceMdnsName.contains('.local')) {
-      validDeviceMdnsName += '.local';
-    }
     try {
       final List<InternetAddress> deviceIpList =
-          await InternetAddress.lookup(validDeviceMdnsName);
+          await InternetAddress.lookup(deviceMdnsName);
       if (deviceIpList.isNotEmpty) {
         return deviceIpList[0].address;
       }

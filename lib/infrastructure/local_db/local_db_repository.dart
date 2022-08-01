@@ -1,29 +1,37 @@
 import 'dart:convert';
 
 import 'package:cbj_hub/domain/app_communication/i_app_communication_repository.dart';
+import 'package:cbj_hub/domain/binding/binding_cbj_entity.dart';
+import 'package:cbj_hub/domain/binding/value_objects_routine_cbj.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/device_entity_abstract.dart';
 import 'package:cbj_hub/domain/generic_devices/abstract_device/value_objects_core.dart';
 import 'package:cbj_hub/domain/local_db/i_local_db_repository.dart';
 import 'package:cbj_hub/domain/local_db/local_db_failures.dart';
 import 'package:cbj_hub/domain/room/room_entity.dart';
 import 'package:cbj_hub/domain/room/value_objects_room.dart';
+import 'package:cbj_hub/domain/routine/routine_cbj_entity.dart';
+import 'package:cbj_hub/domain/routine/value_objects_routine_cbj.dart';
 import 'package:cbj_hub/domain/scene/scene_cbj_entity.dart';
 import 'package:cbj_hub/domain/scene/value_objects_scene_cbj.dart';
 import 'package:cbj_hub/domain/vendors/login_abstract/login_entity_abstract.dart';
 import 'package:cbj_hub/domain/vendors/login_abstract/value_login_objects_core.dart';
 import 'package:cbj_hub/domain/vendors/tuya_login/generic_tuya_login_entity.dart';
 import 'package:cbj_hub/domain/vendors/tuya_login/generic_tuya_login_value_objects.dart';
+import 'package:cbj_hub/infrastructure/bindings/binding_cbj_dtos.dart';
 import 'package:cbj_hub/infrastructure/core/singleton/my_singleton.dart';
-import 'package:cbj_hub/infrastructure/devices/companys_connector_conjector.dart';
+import 'package:cbj_hub/infrastructure/devices/companies_connector_conjector.dart';
 import 'package:cbj_hub/infrastructure/devices/device_helper/device_helper.dart';
 import 'package:cbj_hub/infrastructure/gen/cbj_hub_server/protoc_as_dart/cbj_hub_server.pbgrpc.dart';
+import 'package:cbj_hub/infrastructure/local_db/hive_objects/bindings_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/devices_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/hub_entity_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/remote_pipes_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/rooms_hive_model.dart';
+import 'package:cbj_hub/infrastructure/local_db/hive_objects/routines_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/scenes_hive_model.dart';
 import 'package:cbj_hub/infrastructure/local_db/hive_objects/tuya_vendor_credentials_hive_model.dart';
 import 'package:cbj_hub/infrastructure/room/room_entity_dtos.dart';
+import 'package:cbj_hub/infrastructure/routines/routine_cbj_dtos.dart';
 import 'package:cbj_hub/infrastructure/scenes/scene_cbj_dtos.dart';
 import 'package:cbj_hub/injection.dart';
 import 'package:cbj_hub/utils.dart';
@@ -51,6 +59,8 @@ class HiveRepository extends ILocalDbRepository {
     Hive.registerAdapter(RoomsHiveModelAdapter());
     Hive.registerAdapter(DevicesHiveModelAdapter());
     Hive.registerAdapter(ScenesHiveModelAdapter());
+    Hive.registerAdapter(RoutinesHiveModelAdapter());
+    Hive.registerAdapter(BindingsHiveModelAdapter());
     Hive.registerAdapter(HubEntityHiveModelAdapter());
     Hive.registerAdapter(TuyaVendorCredentialsHiveModelAdapter());
     loadFromDb();
@@ -70,7 +80,7 @@ class HiveRepository extends ILocalDbRepository {
       vendorBoxName: tuyaVendorCredentialsBoxName,
     ))
         .fold((l) {}, (r) {
-      CompanysConnectorConjector.setVendorLoginCredentials(r);
+      CompaniesConnectorConjector.setVendorLoginCredentials(r);
 
       logger.i(
         'Tuya login credentials user name ${r.tuyaUserName.getOrCrash()} found',
@@ -80,7 +90,7 @@ class HiveRepository extends ILocalDbRepository {
       vendorBoxName: smartLifeVendorCredentialsBoxName,
     ))
         .fold((l) {}, (r) {
-      CompanysConnectorConjector.setVendorLoginCredentials(r);
+      CompaniesConnectorConjector.setVendorLoginCredentials(r);
 
       logger.i(
         'Smart Life login credentials user name ${r.tuyaUserName.getOrCrash()} found',
@@ -90,7 +100,7 @@ class HiveRepository extends ILocalDbRepository {
       vendorBoxName: jinvooSmartVendorCredentialsBoxName,
     ))
         .fold((l) {}, (r) {
-      CompanysConnectorConjector.setVendorLoginCredentials(r);
+      CompaniesConnectorConjector.setVendorLoginCredentials(r);
 
       logger.i(
         'Jinvoo Smart login credentials user name ${r.tuyaUserName.getOrCrash()} found',
@@ -118,6 +128,8 @@ class HiveRepository extends ILocalDbRepository {
           roomTypes: RoomTypes(roomHive.roomTypes),
           roomDevicesId: RoomDevicesId(roomHive.roomDevicesId),
           roomScenesId: RoomScenesId(roomHive.roomScenesId),
+          roomRoutinesId: RoomRoutinesId(roomHive.roomRoutinesId),
+          roomBindingsId: RoomBindingsId(roomHive.roomBindingsId),
           roomMostUsedBy: RoomMostUsedBy(roomHive.roomMostUsedBy),
           roomPermissions: RoomPermissions(roomHive.roomPermissions),
         );
@@ -326,6 +338,8 @@ class HiveRepository extends ILocalDbRepository {
           ..roomDefaultName = roomEntityDtos.defaultName
           ..roomDevicesId = roomEntityDtos.roomDevicesId
           ..roomScenesId = roomEntityDtos.roomScenesId
+          ..roomRoutinesId = roomEntityDtos.roomRoutinesId
+          ..roomBindingsId = roomEntityDtos.roomBindingsId
           ..roomMostUsedBy = roomEntityDtos.roomMostUsedBy
           ..roomPermissions = roomEntityDtos.roomPermissions
           ..roomTypes = roomEntityDtos.roomTypes;
@@ -495,8 +509,77 @@ class HiveRepository extends ILocalDbRepository {
   }
 
   @override
-  Future<Either<LocalDbFailures, Unit>> saveScenes(
-      {required List<SceneCbjEntity> sceneList}) async {
+  Future<Either<LocalDbFailures, List<RoutineCbjEntity>>>
+      getRoutinesFromDb() async {
+    final List<RoutineCbjEntity> routines = <RoutineCbjEntity>[];
+
+    try {
+      final Box<RoutinesHiveModel> routinesBox =
+          await Hive.openBox<RoutinesHiveModel>(routinesBoxName);
+
+      final List<RoutinesHiveModel> routinesHiveModelFromDb =
+          routinesBox.values.toList().cast<RoutinesHiveModel>();
+
+      await routinesBox.close();
+
+      for (final RoutinesHiveModel routineHive in routinesHiveModelFromDb) {
+        final RoutineCbjEntity routineEntity = RoutineCbjDtos.fromJson(
+          jsonDecode(routineHive.routinesStringJson) as Map<String, dynamic>,
+        ).toDomain();
+
+        routines.add(
+          routineEntity.copyWith(
+            deviceStateGRPC: RoutineCbjDeviceStateGRPC(
+              DeviceStateGRPC.waitingInComp.toString(),
+            ),
+          ),
+        );
+      }
+      return right(routines);
+    } catch (e) {
+      logger.e('Local DB hive error while getting devices: $e');
+    }
+    return left(const LocalDbFailures.unexpected());
+  }
+
+  @override
+  Future<Either<LocalDbFailures, List<BindingCbjEntity>>>
+      getBindingsFromDb() async {
+    final List<BindingCbjEntity> bindings = <BindingCbjEntity>[];
+
+    try {
+      final Box<BindingsHiveModel> bindingsBox =
+          await Hive.openBox<BindingsHiveModel>(bindingsBoxName);
+
+      final List<BindingsHiveModel> bindingsHiveModelFromDb =
+          bindingsBox.values.toList().cast<BindingsHiveModel>();
+
+      await bindingsBox.close();
+
+      for (final BindingsHiveModel bindingHive in bindingsHiveModelFromDb) {
+        final BindingCbjEntity bindingEntity = BindingCbjDtos.fromJson(
+          jsonDecode(bindingHive.bindingsStringJson) as Map<String, dynamic>,
+        ).toDomain();
+
+        bindings.add(
+          bindingEntity.copyWith(
+            deviceStateGRPC: BindingCbjDeviceStateGRPC(
+              DeviceStateGRPC.waitingInComp.toString(),
+            ),
+          ),
+        );
+      }
+      return right(bindings);
+    } catch (e) {
+      logger.e('Local DB hive error while getting devices: $e');
+    }
+    return left(const LocalDbFailures.unexpected());
+  }
+
+  @override
+  Future<Either<LocalDbFailures, Unit>> saveScenes({
+    required List<SceneCbjEntity> sceneList,
+  }) async {
     try {
       final List<ScenesHiveModel> scenesHiveList = [];
 
@@ -520,6 +603,73 @@ class HiveRepository extends ILocalDbRepository {
       logger.i('Scenes got saved to local storage');
     } catch (e) {
       logger.e('Error saving Scenes to local storage\n$e');
+      return left(const LocalDbFailures.unexpected());
+    }
+
+    return right(unit);
+  }
+
+  @override
+  Future<Either<LocalDbFailures, Unit>> saveRoutines({
+    required List<RoutineCbjEntity> routineList,
+  }) async {
+    try {
+      final List<RoutinesHiveModel> routinesHiveList = [];
+
+      final List<String> routinesListStringJson = List<String>.from(
+        routineList.map((e) => jsonEncode(e.toInfrastructure().toJson())),
+      );
+
+      for (final String routinesEntityDtosJsonString
+          in routinesListStringJson) {
+        final RoutinesHiveModel routinesHiveModel = RoutinesHiveModel()
+          ..routinesStringJson = routinesEntityDtosJsonString;
+        routinesHiveList.add(routinesHiveModel);
+      }
+
+      final Box<RoutinesHiveModel> routinesBox =
+          await Hive.openBox<RoutinesHiveModel>(routinesBoxName);
+
+      await routinesBox.clear();
+      await routinesBox.addAll(routinesHiveList);
+
+      await routinesBox.close();
+      logger.i('Routines got saved to local storage');
+    } catch (e) {
+      logger.e('Error saving Routines to local storage\n$e');
+      return left(const LocalDbFailures.unexpected());
+    }
+
+    return right(unit);
+  }
+
+  @override
+  Future<Either<LocalDbFailures, Unit>> saveBindings(
+      {required List<BindingCbjEntity> bindingList}) async {
+    try {
+      final List<BindingsHiveModel> bindingsHiveList = [];
+
+      final List<String> bindingsListStringJson = List<String>.from(
+        bindingList.map((e) => jsonEncode(e.toInfrastructure().toJson())),
+      );
+
+      for (final String bindingsEntityDtosJsonString
+          in bindingsListStringJson) {
+        final BindingsHiveModel bindingsHiveModel = BindingsHiveModel()
+          ..bindingsStringJson = bindingsEntityDtosJsonString;
+        bindingsHiveList.add(bindingsHiveModel);
+      }
+
+      final Box<BindingsHiveModel> bindingsBox =
+          await Hive.openBox<BindingsHiveModel>(bindingsBoxName);
+
+      await bindingsBox.clear();
+      await bindingsBox.addAll(bindingsHiveList);
+
+      await bindingsBox.close();
+      logger.i('Bindings got saved to local storage');
+    } catch (e) {
+      logger.e('Error saving Bindings to local storage\n$e');
       return left(const LocalDbFailures.unexpected());
     }
 
