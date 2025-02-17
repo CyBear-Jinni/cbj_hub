@@ -38,39 +38,25 @@ class MqttServerRepository extends IMqttServerRepository {
   }
 
   @override
-  String getHubBaseTopic() {
-    return hubBaseTopic;
-  }
+  String getHubBaseTopic() => hubBaseTopic;
 
   @override
-  String getNodeRedApiBaseTopic() {
-    return nodeRedApiBaseTopic;
-  }
+  String getNodeRedApiBaseTopic() => nodeRedApiBaseTopic;
 
   @override
-  String getDevicesTopicTypeName() {
-    return devicesTopicTypeName;
-  }
+  String getDevicesTopicTypeName() => devicesTopicTypeName;
 
   @override
-  String getNodeRedDevicesTopicTypeName() {
-    return nodeRedDevicesTopic;
-  }
+  String getNodeRedDevicesTopicTypeName() => nodeRedDevicesTopic;
 
   @override
-  String getScenesTopicTypeName() {
-    return scenesTopicTypeName;
-  }
+  String getScenesTopicTypeName() => scenesTopicTypeName;
 
   @override
-  String getRoutinesTopicTypeName() {
-    return routinesTopicTypeName;
-  }
+  String getRoutinesTopicTypeName() => routinesTopicTypeName;
 
   @override
-  String getBindingsTopicTypeName() {
-    return bindingsTopicTypeName;
-  }
+  String getBindingsTopicTypeName() => bindingsTopicTypeName;
 
   /// Connect the client to mqtt if not in connecting or connected state already
   @override
@@ -119,9 +105,8 @@ class MqttServerRepository extends IMqttServerRepository {
   }
 
   @override
-  Future subscribeToTopic(String topic) async {
-    client.subscribe(topic, MqttQos.atLeastOnce);
-  }
+  Future subscribeToTopic(String topic) async =>
+      client.subscribe(topic, MqttQos.atLeastOnce);
 
   @override
   Stream<List<MqttReceivedMessage<MqttMessage?>>>
@@ -245,34 +230,22 @@ class MqttServerRepository extends IMqttServerRepository {
   }
 
   /// Callback function for connection succeeded
-  void onConnected() {
-    logger.t('Connected');
-  }
+  void onConnected() => logger.t('Connected');
 
   /// Unconnected
-  void onDisconnected() {
-    logger.t('Disconnected');
-  }
+  void onDisconnected() => logger.t('Disconnected');
 
   /// subscribe to topic succeeded
-  void onSubscribed(String topic) {
-    logger.t('Subscribed topic: $topic');
-  }
+  void onSubscribed(String topic) => logger.t('Subscribed topic: $topic');
 
   /// subscribe to topic failed
-  void onSubscribeFail(String topic) {
-    logger.t('Failed to subscribe $topic');
-  }
+  void onSubscribeFail(String topic) => logger.t('Failed to subscribe $topic');
 
   /// unsubscribe succeeded
-  void onUnsubscribed(String? topic) {
-    logger.t('Unsubscribed topic: $topic');
-  }
+  void onUnsubscribed(String? topic) => logger.t('Unsubscribed topic: $topic');
 
   /// PING response received
-  void pong() {
-    logger.t('Ping response MQTT client callback invoked');
-  }
+  void pong() => logger.t('Ping response MQTT client callback invoked');
 
   /// Convert device entity properties to mqtt topic and massage
   Map<String, String> deviceEntityPropertiesToListOfTopicAndValue(
@@ -355,7 +328,6 @@ class MqttServerRepository extends IMqttServerRepository {
   @override
   Future postSmartDeviceToAppMqtt({
     required DeviceEntityBase entityFromTheHub,
-  }) async {
-    postToAppMqtt(entityFromTheHub: entityFromTheHub);
-  }
+  }) async =>
+      postToAppMqtt(entityFromTheHub: entityFromTheHub);
 }

@@ -22,6 +22,7 @@ Future initializeIntegrationsController({
   }
 
   //  Setting device model and checking if configuration for this model exist
+  setInstanceForDartNative();
   await DevicePinListManager().setPhysicalDeviceType();
 
   Hive.init(await dbPath());
